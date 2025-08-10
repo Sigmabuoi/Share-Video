@@ -3,84 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShareTube — Chia sẻ video</title>
+  <title>ShareTube Pro — Chia sẻ video</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .hidden {
-      display: none;
-    }
+    body { font-family: 'Arial', sans-serif; transition: background-color 0.3s ease; }
+    .dark-mode { background-color: #1a202c; color: white; }
+    .dark-mode .bg-white { background-color: #2d3748; }
+    .dark-mode .bg-gray-100 { background-color: #4a5568; }
+    .hidden { display: none; }
+    .spinner { border: 4px solid rgba(0, 0, 0, 0.1); border-left-color: #3182ce; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .video-player { position: relative; width: 100%; max-height: 300px; background: black; border-radius: 8px; overflow: hidden; }
+    .video-player video, .video-player iframe { width: 100%; height: 100%; }
+    .controls { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; display: flex; justify-content: space-between; align-items: center; padding: 8px; transition: opacity 0.3s; opacity: 0; }
+    .video-player:hover .controls { opacity: 1; }
+    .progress-bar { height: 4px; background: #3182ce; width: 0; }
+    .playback-line { background: rgba(255,255,255,0.3); height: 4px; cursor: pointer; }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">ShareTube</h1>
-    <p class="text-center text-gray-600 mb-4">Dán link YouTube / Vimeo / MP4. Mở file là chạy — không cần server.</p>
+<body class="bg-gradient-to-r from-blue-100 to-indigo-100 min-h-screen flex flex-col items-center justify-center p-4 transition-all duration-300">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl transition-all duration-300">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold text-indigo-600">ShareTube Pro</h1>
+      <button onclick="toggleDarkMode()" class="text-yellow-500 hover:text-yellow-600"><i class="fas fa-moon"></i> Dark Mode</button>
+    </div>
+    <p class="text-center text-gray-600 mb-4">Dán link YouTube/Vimeo/MP4 hoặc upload file. Client-side hoàn toàn!</p>
 
     <!-- Input Form -->
-    <div class="mb-4">
-      <input id="videoLink" type="text" placeholder="Dán link video..." class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button onclick="addVideo()" class="mt-2 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">Thêm</button>
+    <div class="flex space-x-2 mb-4">
+      <input id="videoLink" type="text" placeholder="Dán link hoặc chọn file..." class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all">
+      <button onclick="addVideo()" class="bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition-all"><i class="fas fa-plus"></i> Thêm</button>
+      <input id="fileUpload" type="file" accept="video/mp4" class="hidden" onchange="uploadLocalVideo()">
+      <button onclick="document.getElementById('fileUpload').click()" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all"><i class="fas fa-upload"></i></button>
     </div>
+
+    <!-- Search Bar -->
+    <input id="searchInput" type="text" placeholder="Tìm kiếm video..." class="w-full p-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all">
 
     <!-- Video List -->
-    <div id="videoList" class="mb-4"></div>
+    <div id="videoList" class="mb-4 max-h-48 overflow-y-auto space-y-2"></div>
 
     <!-- Video Player -->
-    <div id="videoPlayer" class="mb-4 hidden">
-      <video id="player" controls class="w-full rounded-lg"></video>
+    <div id="videoPlayer" class="video-player mb-4 hidden">
+      <div id="playerContainer"></div>
+      <div class="controls">
+        <div class="left">
+          <button id="playPause"><i class="fas fa-play"></i></button>
+          <button id="skipMinus10"><i class="fas fa-backward"></i></button>
+          <button id="skip10"><i class="fas fa-forward"></i></button>
+        </div>
+        <div class="video-timer">
+          <span id="currentTime">00:00</span> / <span id="maxDuration">00:00</span>
+        </div>
+        <div class="playback-line" onclick="seekVideo(event)">
+          <div class="progress-bar"></div>
+        </div>
+        <div class="right">
+          <button id="mute"><i class="fas fa-volume-up"></i></button>
+          <input type="range" id="volume" min="0" max="1" step="0.01" value="1" class="w-20">
+        </div>
+      </div>
     </div>
 
-    <!-- Share Buttons -->
+    <!-- Buttons -->
     <div class="flex space-x-2 mb-4">
-      <button onclick="exportLinks()" class="flex-1 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">Export</button>
-      <button onclick="showImportModal()" class="flex-1 bg-purple-500 text-white p-2 rounded-lg hover:bg-purple-600">Import</button>
-      <button onclick="shareLink()" class="flex-1 bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600">Chia sẻ</button>
+      <button onclick="exportLinks()" class="flex-1 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition-all"><i class="fas fa-download"></i> Export</button>
+      <button onclick="showImportModal()" class="flex-1 bg-purple-500 text-white p-2 rounded-lg hover:bg-purple-600 transition-all"><i class="fas fa-upload"></i> Import</button>
+      <button onclick="shareLink()" class="flex-1 bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition-all"><i class="fas fa-share"></i> Chia sẻ</button>
     </div>
 
     <!-- QR Code -->
-    <div id="qrCode" class="flex justify-center mb-4 hidden"></div>
+    <div id="qrCode" class="flex justify-center mt-4 hidden"></div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="flex justify-center items-center hidden"><div class="spinner"></div></div>
   </div>
 
   <!-- Import Modal -->
-  <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+  <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden transition-opacity duration-300">
+    <div class="bg-white rounded-xl p-6 w-full max-w-sm transition-all duration-300">
       <h2 class="text-lg font-bold mb-4">Import Links</h2>
-      <textarea id="importText" class="w-full p-2 border rounded-lg mb-4" placeholder="Dán danh sách link..."></textarea>
+      <textarea id="importText" class="w-full p-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
       <div class="flex space-x-2">
-        <button onclick="importLinks()" class="flex-1 bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">Xác nhận</button>
-        <button onclick="closeImportModal()" class="flex-1 bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600">Đóng</button>
+        <button onclick="importLinks()" class="flex-1 bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition-all">Xác nhận</button>
+        <button onclick="closeImportModal()" class="flex-1 bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600 transition-all">Đóng</button>
       </div>
     </div>
   </div>
 
   <script>
     let videos = JSON.parse(localStorage.getItem('videos')) || [];
+    let currentPlayer = null;
+    const MAX_FREE_VIDEOS = 5;
+    let isVIP = localStorage.getItem('isVIP') === 'true'; // Fake VIP
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+
+    if (localStorage.getItem('darkMode') === 'true') toggleDarkMode();
+
+    function showLoading(show) {
+      document.getElementById('loading').classList.toggle('hidden', !show);
+    }
 
     function addVideo() {
+      showLoading(true);
       const link = document.getElementById('videoLink').value.trim();
-      if (link) {
+      if (videos.length >= MAX_FREE_VIDEOS && !isVIP) return alert('Nâng cấp VIP để thêm nhiều hơn 5 video!');
+      if (link && isValidLink(link)) {
         videos.push(link);
         localStorage.setItem('videos', JSON.stringify(videos));
         document.getElementById('videoLink').value = '';
         renderVideoList();
+      } else {
+        alert('Link không hợp lệ! Chỉ hỗ trợ YouTube, Vimeo hoặc MP4.');
       }
+      showLoading(false);
+    }
+
+    function uploadLocalVideo() {
+      showLoading(true);
+      const file = document.getElementById('fileUpload').files[0];
+      if (file && file.type === 'video/mp4') {
+        const url = URL.createObjectURL(file);
+        videos.push(url);
+        localStorage.setItem('videos', JSON.stringify(videos));
+        renderVideoList();
+      } else {
+        alert('Chỉ hỗ trợ file MP4!');
+      }
+      showLoading(false);
+    }
+
+    function isValidLink(link) {
+      return link.includes('youtube.com') || link.includes('vimeo.com') || link.endsWith('.mp4') || link.startsWith('blob:');
     }
 
     function renderVideoList() {
       const videoList = document.getElementById('videoList');
+      const search = document.getElementById('searchInput').value.toLowerCase();
       videoList.innerHTML = '';
-      videos.forEach((link, index) => {
+      videos.filter(v => v.toLowerCase().includes(search)).forEach((link, index) => {
         const div = document.createElement('div');
-        div.className = 'flex justify-between items-center p-2 bg-gray-50 rounded-lg mb-2';
+        div.className = 'flex justify-between items-center p-3 bg-gray-100 rounded-lg transition-all hover:bg-gray-200';
         div.innerHTML = `
-          <span class="text-gray-700 truncate">${link}</span>
+          <span class="text-indigo-600 truncate flex-1"><i class="fas fa-video mr-2"></i>${link}</span>
           <div>
-            <button onclick="playVideo('${link}')" class="text-blue-500 hover:text-blue-700 mr-2">Phát</button>
-            <button onclick="deleteVideo(${index})" class="text-red-500 hover:text-red-700">Xóa</button>
+            <button onclick="playVideo('${link.replace(/'/g, "\\'")}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-play"></i></button>
+            <button onclick="deleteVideo(${index})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
           </div>
         `;
         videoList.appendChild(div);
@@ -88,11 +162,69 @@
     }
 
     function playVideo(link) {
-      const player = document.getElementById('player');
-      const videoPlayer = document.getElementById('videoPlayer');
-      player.src = link;
-      videoPlayer.classList.remove('hidden');
-      player.play();
+      showLoading(true);
+      const playerContainer = document.getElementById('playerContainer');
+      playerContainer.innerHTML = '';
+      document.getElementById('videoPlayer').classList.remove('hidden');
+
+      if (link.includes('youtube.com')) {
+        const videoId = link.split('v=')[1];
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        playerContainer.appendChild(iframe);
+        currentPlayer = iframe;
+      } else if (link.includes('vimeo.com')) {
+        const videoId = link.split('/').pop();
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+        playerContainer.appendChild(iframe);
+        currentPlayer = iframe;
+      } else { // MP4 or local
+        const video = document.createElement('video');
+        video.src = link;
+        video.controls = true;
+        playerContainer.appendChild(video);
+        currentPlayer = video;
+        setupCustomControls(video);
+        video.play();
+      }
+      showLoading(false);
+    }
+
+    function setupCustomControls(video) {
+      const playPause = document.getElementById('playPause');
+      const skipMinus10 = document.getElementById('skipMinus10');
+      const skip10 = document.getElementById('skip10');
+      const mute = document.getElementById('mute');
+      const volume = document.getElementById('volume');
+      const currentTime = document.getElementById('currentTime');
+      const maxDuration = document.getElementById('maxDuration');
+      const progressBar = document.querySelector('.progress-bar');
+
+      playPause.onclick = () => video.paused ? video.play() : video.pause();
+      skipMinus10.onclick = () => video.currentTime -= 10;
+      skip10.onclick = () => video.currentTime += 10;
+      mute.onclick = () => { video.muted = !video.muted; mute.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; };
+      volume.oninput = () => video.volume = volume.value;
+
+      video.ontimeupdate = () => {
+        currentTime.textContent = formatTime(video.currentTime);
+        maxDuration.textContent = formatTime(video.duration);
+        progressBar.style.width = `${(video.currentTime / video.duration) * 100}%`;
+      };
+    }
+
+    function formatTime(time) {
+      const mins = Math.floor(time / 60);
+      const secs = Math.floor(time % 60);
+      return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function seekVideo(event) {
+      if (!currentPlayer || !(currentPlayer instanceof HTMLVideoElement)) return;
+      const rect = event.target.getBoundingClientRect();
+      const pos = (event.clientX - rect.left) / rect.width;
+      currentPlayer.currentTime = pos * currentPlayer.duration;
     }
 
     function deleteVideo(index) {
@@ -102,10 +234,13 @@
     }
 
     function exportLinks() {
-      const exportData = JSON.stringify(videos);
-      navigator.clipboard.writeText(exportData).then(() => {
-        alert('Đã sao chép danh sách link vào clipboard!');
-      });
+      const data = JSON.stringify(videos);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'videos.json';
+      a.click();
     }
 
     function showImportModal() {
@@ -119,17 +254,17 @@
     function importLinks() {
       const importText = document.getElementById('importText').value.trim();
       try {
-        const importedVideos = JSON.parse(importText);
-        if (Array.isArray(importedVideos)) {
-          videos = importedVideos;
+        const imported = JSON.parse(importText);
+        if (Array.isArray(imported)) {
+          videos = imported.filter(isValidLink);
           localStorage.setItem('videos', JSON.stringify(videos));
           renderVideoList();
           closeImportModal();
         } else {
-          alert('Dữ liệu import không hợp lệ!');
+          alert('Dữ liệu không hợp lệ!');
         }
       } catch (e) {
-        alert('Lỗi khi import: ' + e.message);
+        alert('Lỗi import: ' + e.message);
       }
     }
 
@@ -138,30 +273,40 @@
       const shareUrl = `${window.location.origin}?videos=${shareData}`;
       document.getElementById('qrCode').innerHTML = '';
       document.getElementById('qrCode').classList.remove('hidden');
-      new QRCode(document.getElementById('qrCode'), {
-        text: shareUrl,
-        width: 128,
-        height: 128
-      });
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert('Đã sao chép link chia sẻ vào clipboard!');
-      });
+      new QRCode(document.getElementById('qrCode'), { text: shareUrl, width: 128, height: 128 });
+      navigator.clipboard.writeText(shareUrl).then(() => alert('Đã copy link chia sẻ!'));
     }
 
-    // Load videos from URL query if present
+    // Debounce search
+    let debounceTimer;
+    document.getElementById('searchInput').addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderVideoList, 300);
+    });
+
+    // Load shared videos
     const urlParams = new URLSearchParams(window.location.search);
     const sharedVideos = urlParams.get('videos');
     if (sharedVideos) {
       try {
         videos = JSON.parse(atob(sharedVideos));
         localStorage.setItem('videos', JSON.stringify(videos));
-      } catch (e) {
-        console.error('Error loading shared videos:', e);
-      }
+      } catch (e) {}
     }
 
     // Initial render
     renderVideoList();
+
+    // Fake VIP unlock (for demo)
+    if (!isVIP) {
+      setTimeout(() => {
+        if (confirm('Muốn unlock VIP để thêm unlimited videos? (Demo)')) {
+          isVIP = true;
+          localStorage.setItem('isVIP', 'true');
+          alert('VIP unlocked!');
+        }
+      }, 5000);
+    }
   </script>
 </body>
 </html>
