@@ -1,230 +1,167 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ShareTube — Chia Sẻ Video (Standalone)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShareTube — Chia sẻ video</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root{--bgA:linear-gradient(135deg,#74ebd5,#acb6e5);--card:#ffffffee;--muted:#6b7280;--accent:#ff6f61;--glass:rgba(12,17,23,0.06);--radius:14px}
-    [data-theme="dark"]{--bgA:linear-gradient(135deg,#071126,#0b1220);--card:rgba(12,17,23,0.7);--muted:#9fb0c8;--accent:#ff8a80;--glass:rgba(255,255,255,0.03)}
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto;min-height:100%;margin:0;padding:28px;background:var(--bgA);background-size:200% 200%;animation:grad 18s linear infinite;color:var(--text,#071127)}
-    @keyframes grad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-    .wrap{max-width:1100px;margin:0 auto}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:56px;height:56px;border-radius:12px;background:var(--card);display:grid;place-items:center;font-weight:700;box-shadow:0 8px 30px var(--glass)}
-    h1{font-size:20px;margin:0}
-    p.lead{margin:0;color:var(--muted);font-size:13px}
-
-    .controls{display:flex;gap:8px;align-items:center}
-    .btn{border:0;padding:10px 12px;border-radius:10px;background:var(--card);cursor:pointer;display:inline-flex;gap:8px;align-items:center;box-shadow:0 8px 20px var(--glass)}
-    .btn.primary{background:var(--accent);color:#fff}
-
-    .form{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
-    .input-pill{display:flex;gap:8px;align-items:center;background:var(--card);padding:10px 12px;border-radius:999px;box-shadow:0 10px 30px var(--glass);flex:1;min-width:240px}
-    input[type=text]{border:0;background:transparent;outline:none;padding:6px;font-size:14px}
-    .mini{padding:8px 10px;border-radius:8px}
-
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}
-    .card{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 10px 30px var(--glass);display:flex;flex-direction:column;gap:10px}
-    .thumb{height:160px;border-radius:10px;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center}
-    .thumb img{width:100%;height:100%;object-fit:cover}
-    .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .meta .left{overflow:hidden}
-    .title{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .time{font-size:12px;color:var(--muted)}
-    .actions{display:flex;gap:8px}
-    .small{padding:6px 8px;border-radius:8px;font-size:13px}
-
-    .tools{display:flex;gap:8px;align-items:center;margin-top:8px}
-    .search{padding:8px 12px;border-radius:999px;border:0;box-shadow:0 8px 20px var(--glass);min-width:180px}
-
-    footer{margin-top:22px;color:var(--muted);font-size:13px;text-align:center}
-
-    /* modal */
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);z-index:90}
-    .modal.show{display:flex}
-    .modal-card{width:min(980px,96%);background:var(--card);padding:14px;border-radius:12px}
-    .modal iframe,.modal video{width:100%;height:520px;border-radius:8px}
-    @media(max-width:640px){.thumb{height:140px}.modal iframe,.modal video{height:320px}}
-
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo">ST</div>
-        <div>
-          <h1>ShareTube — Chia sẻ video</h1>
-          <p class="lead">Dán link YouTube / Vimeo / MP4. Mở file là chạy — không cần server.</p>
-        </div>
-      </div>
-      <div class="controls">
-        <button id="themeBtn" class="btn"><i class="fa-solid fa-moon"></i></button>
-        <button id="exportBtn" class="btn"><i class="fa-solid fa-file-export"></i> Export</button>
-        <button id="importBtn" class="btn"><i class="fa-solid fa-file-import"></i> Import</button>
-        <button id="clearBtn" class="btn"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    </header>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">ShareTube</h1>
+    <p class="text-center text-gray-600 mb-4">Dán link YouTube / Vimeo / MP4. Mở file là chạy — không cần server.</p>
 
-    <div class="form">
-      <div class="input-pill">
-        <i class="fa-solid fa-link" style="opacity:.6"></i>
-        <input id="urlInput" type="text" placeholder="Dán URL YouTube / Vimeo / MP4" />
-        <input id="titleInput" type="text" placeholder="Tiêu đề (tuỳ chọn)" style="max-width:260px" />
-        <button id="addBtn" class="btn primary"><i class="fa-solid fa-plus"></i> Thêm</button>
-      </div>
-      <input id="search" class="search" placeholder="Tìm theo tiêu đề..." />
+    <!-- Input Form -->
+    <div class="mb-4">
+      <input id="videoLink" type="text" placeholder="Dán link video..." class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button onclick="addVideo()" class="mt-2 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">Thêm</button>
     </div>
 
-    <div class="grid" id="grid"></div>
+    <!-- Video List -->
+    <div id="videoList" class="mb-4"></div>
 
-    <footer>Được lưu trên LocalStorage — mở file này trên máy bạn là dùng được. Muốn mình thêm nút chia sẻ qua link/QR không?</footer>
+    <!-- Video Player -->
+    <div id="videoPlayer" class="mb-4 hidden">
+      <video id="player" controls class="w-full rounded-lg"></video>
+    </div>
+
+    <!-- Share Buttons -->
+    <div class="flex space-x-2 mb-4">
+      <button onclick="exportLinks()" class="flex-1 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">Export</button>
+      <button onclick="showImportModal()" class="flex-1 bg-purple-500 text-white p-2 rounded-lg hover:bg-purple-600">Import</button>
+      <button onclick="shareLink()" class="flex-1 bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600">Chia sẻ</button>
+    </div>
+
+    <!-- QR Code -->
+    <div id="qrCode" class="flex justify-center mb-4 hidden"></div>
   </div>
 
-  <div id="modal" class="modal"><div class="modal-card"><button id="closeModal" class="btn small" style="float:right;margin-bottom:8px">Đóng</button><div id="modalBody"></div></div></div>
+  <!-- Import Modal -->
+  <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+      <h2 class="text-lg font-bold mb-4">Import Links</h2>
+      <textarea id="importText" class="w-full p-2 border rounded-lg mb-4" placeholder="Dán danh sách link..."></textarea>
+      <div class="flex space-x-2">
+        <button onclick="importLinks()" class="flex-1 bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">Xác nhận</button>
+        <button onclick="closeImportModal()" class="flex-1 bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600">Đóng</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const LS = 'st_videos_v1';
-    const grid = document.getElementById('grid');
-    const urlInput = document.getElementById('urlInput');
-    const titleInput = document.getElementById('titleInput');
-    const addBtn = document.getElementById('addBtn');
-    const search = document.getElementById('search');
-    const exportBtn = document.getElementById('exportBtn');
-    const importBtn = document.getElementById('importBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const themeBtn = document.getElementById('themeBtn');
+    let videos = JSON.parse(localStorage.getItem('videos')) || [];
 
-    let videos = JSON.parse(localStorage.getItem(LS) || '[]');
-    const modal = document.getElementById('modal');
-    const modalBody = document.getElementById('modalBody');
-
-    function save(){ localStorage.setItem(LS, JSON.stringify(videos)); }
-    function short(t){ return t?.length>28 ? t.slice(0,28)+'...' : t }
-
-    function parseUrl(u){
-      try{ u = u.trim(); if(!u) return null;
-        // youtube
-        if(u.includes('youtube.com/watch') || u.includes('youtu.be/')){
-          let id='';
-          if(u.includes('v=')) id = new URL(u).searchParams.get('v');
-          else id = u.split('youtu.be/')[1].split(/[?&]/)[0];
-          return {type:'youtube',id,src:'https://www.youtube.com/watch?v='+id,embed:'https://www.youtube.com/embed/'+id,thumb:'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'}
-        }
-        // vimeo
-        if(u.includes('vimeo.com/')){
-          const id = u.split('vimeo.com/')[1].split(/[?&/]/)[0];
-          return {type:'vimeo',id,src:u,embed:'https://player.vimeo.com/video/'+id,thumb:null}
-        }
-        // mp4
-        if(u.endsWith('.mp4') || u.includes('.mp4?')){
-          return {type:'mp4',id:Date.now().toString(36),src:u,embed:u,thumb:null}
-        }
-        return null;
-      }catch(e){ return null }
-    }
-
-    async function fetchVimeoThumb(item){
-      try{
-        const res = await fetch('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(item.src));
-        if(res.ok){ const j = await res.json(); item.thumb = j.thumbnail_url; save(); render(); }
-      }catch(e){ /* ignore CORS errors when opened via file:// */ }
-    }
-
-    function makeCard(v){
-      const el = document.createElement('div'); el.className='card';
-      el.innerHTML = `
-        <div class="thumb">${v.thumb?`<img src="${v.thumb}" loading="lazy">`:`<div style="color:#fff;opacity:.85">No preview</div>`}</div>
-        <div class="meta">
-          <div class="left">
-            <div class="title">${escapeHtml(v.title) || (v.type+' • '+(v.id||v._id||''))}</div>
-            <div class="time">${new Date(v.created).toLocaleString()}</div>
-          </div>
-          <div class="actions">
-            <button class="btn small play" data-id="${v._id}"><i class="fa-solid fa-play"></i></button>
-            <button class="btn small copy" data-id="${v._id}"><i class="fa-solid fa-link"></i></button>
-            <button class="btn small edit" data-id="${v._id}"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn small del" data-id="${v._id}"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
-      `;
-      return el;
-    }
-
-    function render(q=''){
-      grid.innerHTML='';
-      const list = videos.filter(v=> (v.title||'').toLowerCase().includes(q.toLowerCase()));
-      if(list.length===0){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:rgba(0,0,0,0.45)">Chưa có video nào — dán link và bấm Thêm nhé!</div>'; return; }
-      list.forEach(v=> grid.appendChild(makeCard(v)));
-    }
-
-    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"'"}[c]||c)); }
-
-    // init ids
-    function ensureIds(){ let changed=false; videos.forEach(v=>{ if(!v._id){ v._id = Date.now().toString(36) + Math.random().toString(36).slice(2,6); changed=true } }); if(changed) save(); }
-    ensureIds(); render();
-
-    addBtn.addEventListener('click', async ()=>{
-      const url = urlInput.value.trim(); const title = titleInput.value.trim();
-      const parsed = parseUrl(url);
-      if(!parsed){ alert('URL không hợp lệ. Hỗ trợ YouTube, Vimeo, MP4.'); return; }
-      const item = { _id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), type: parsed.type, id: parsed.id||parsed._id||'', src: parsed.src, embed: parsed.embed, thumb: parsed.thumb||null, title: title||'', created: Date.now() };
-      videos.unshift(item); save(); render(search.value||''); urlInput.value=''; titleInput.value='';
-      if(item.type==='vimeo' && !item.thumb) await fetchVimeoThumb(item);
-    });
-
-    // delegation
-    grid.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button'); if(!btn) return; const id = btn.dataset.id; const idx = videos.findIndex(x=>x._id==id); if(idx===-1) return;
-      if(btn.classList.contains('play')) openPlayer(videos[idx]);
-      if(btn.classList.contains('copy')){ navigator.clipboard.writeText(videos[idx].src).then(()=>{ alert('Đã sao chép link!') }).catch(()=>alert('Trình duyệt không cho sao chép')) }
-      if(btn.classList.contains('del')){ if(confirm('Xóa video này?')){ videos.splice(idx,1); save(); render(search.value||'') } }
-      if(btn.classList.contains('edit')){ const t = prompt('Tiêu đề mới:', videos[idx].title||''); if(t!==null){ videos[idx].title = t; save(); render(search.value||'') } }
-    });
-
-    function openPlayer(v){ modal.classList.add('show'); if(v.type==='mp4'){ modalBody.innerHTML = `<video controls src="${v.src}" autoplay></video>` } else { modalBody.innerHTML = `<iframe src="${v.embed}?autoplay=1" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>` } }
-    document.getElementById('closeModal').addEventListener('click', ()=>{ modal.classList.remove('show'); modalBody.innerHTML=''; });
-    modal.addEventListener('click', (e)=>{ if(e.target===modal){ modal.classList.remove('show'); modalBody.innerHTML=''; } });
-
-    // search
-    search.addEventListener('input', (e)=> render(e.target.value));
-
-    // export
-    exportBtn.addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify(videos,null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'sharetube_videos.json'; a.click(); URL.revokeObjectURL(url);
-    });
-
-    // import
-    importBtn.addEventListener('click', async ()=>{
-      const txt = prompt('Dán JSON danh sách video (hoặc để trống để chọn file)');
-      if(txt){ try{ const arr = JSON.parse(txt); if(Array.isArray(arr)){ // normalize
-          arr.forEach(x=>{ if(!x._id) x._id = Date.now().toString(36)+Math.random().toString(36).slice(2,6); if(!x.created) x.created = Date.now() });
-          videos = arr.concat(videos); save(); render(); alert('Nhập xong');
-        } else alert('JSON không hợp lệ'); }catch(e){ alert('JSON lỗi') } }
-      else {
-        const input = document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange = e => {
-          const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev=>{ try{ const arr = JSON.parse(ev.target.result); if(Array.isArray(arr)){ arr.forEach(x=>{ if(!x._id) x._id = Date.now().toString(36)+Math.random().toString(36).slice(2,6); if(!x.created) x.created = Date.now() }); videos = arr.concat(videos); save(); render(); alert('Nhập xong') }else alert('JSON không hợp lệ') }catch(err){ alert('File JSON lỗi') } }; r.readAsText(f); }; input.click();
+    function addVideo() {
+      const link = document.getElementById('videoLink').value.trim();
+      if (link) {
+        videos.push(link);
+        localStorage.setItem('videos', JSON.stringify(videos));
+        document.getElementById('videoLink').value = '';
+        renderVideoList();
       }
-    });
+    }
 
-    // clear
-    clearBtn.addEventListener('click', ()=>{ if(confirm('Xóa toàn bộ danh sách?')){ videos=[]; save(); render(); } });
+    function renderVideoList() {
+      const videoList = document.getElementById('videoList');
+      videoList.innerHTML = '';
+      videos.forEach((link, index) => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center p-2 bg-gray-50 rounded-lg mb-2';
+        div.innerHTML = `
+          <span class="text-gray-700 truncate">${link}</span>
+          <div>
+            <button onclick="playVideo('${link}')" class="text-blue-500 hover:text-blue-700 mr-2">Phát</button>
+            <button onclick="deleteVideo(${index})" class="text-red-500 hover:text-red-700">Xóa</button>
+          </div>
+        `;
+        videoList.appendChild(div);
+      });
+    }
 
-    // theme
-    const THEME_KEY = 'st_theme_v1';
-    function initTheme(){ const t = localStorage.getItem(THEME_KEY) || 'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); }
-    initTheme();
-    themeBtn.addEventListener('click', ()=>{ const now = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; const next = now === 'dark' ? 'light' : 'dark'; if(next==='dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); localStorage.setItem(THEME_KEY,next); });
+    function playVideo(link) {
+      const player = document.getElementById('player');
+      const videoPlayer = document.getElementById('videoPlayer');
+      player.src = link;
+      videoPlayer.classList.remove('hidden');
+      player.play();
+    }
 
-    // utils
-    function ensureThumbs(){ videos.forEach(v=>{ if(v.type==='vimeo' && !v.thumb){ fetchVimeoThumb(v) } }) }
-    ensureThumbs();
+    function deleteVideo(index) {
+      videos.splice(index, 1);
+      localStorage.setItem('videos', JSON.stringify(videos));
+      renderVideoList();
+    }
+
+    function exportLinks() {
+      const exportData = JSON.stringify(videos);
+      navigator.clipboard.writeText(exportData).then(() => {
+        alert('Đã sao chép danh sách link vào clipboard!');
+      });
+    }
+
+    function showImportModal() {
+      document.getElementById('importModal').classList.remove('hidden');
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').classList.add('hidden');
+    }
+
+    function importLinks() {
+      const importText = document.getElementById('importText').value.trim();
+      try {
+        const importedVideos = JSON.parse(importText);
+        if (Array.isArray(importedVideos)) {
+          videos = importedVideos;
+          localStorage.setItem('videos', JSON.stringify(videos));
+          renderVideoList();
+          closeImportModal();
+        } else {
+          alert('Dữ liệu import không hợp lệ!');
+        }
+      } catch (e) {
+        alert('Lỗi khi import: ' + e.message);
+      }
+    }
+
+    function shareLink() {
+      const shareData = btoa(JSON.stringify(videos));
+      const shareUrl = `${window.location.origin}?videos=${shareData}`;
+      document.getElementById('qrCode').innerHTML = '';
+      document.getElementById('qrCode').classList.remove('hidden');
+      new QRCode(document.getElementById('qrCode'), {
+        text: shareUrl,
+        width: 128,
+        height: 128
+      });
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('Đã sao chép link chia sẻ vào clipboard!');
+      });
+    }
+
+    // Load videos from URL query if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedVideos = urlParams.get('videos');
+    if (sharedVideos) {
+      try {
+        videos = JSON.parse(atob(sharedVideos));
+        localStorage.setItem('videos', JSON.stringify(videos));
+      } catch (e) {
+        console.error('Error loading shared videos:', e);
+      }
+    }
+
+    // Initial render
+    renderVideoList();
   </script>
 </body>
 </html>
